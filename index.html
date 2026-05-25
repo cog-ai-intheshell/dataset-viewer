@@ -1,0 +1,1184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Triangle Dataset Viewer</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --blue: #1677e8;
+        --blue-dark: #0f5fbd;
+        --green: #27AE60;
+        --red: #EB5757;
+        --orange: #e87511;
+        --ink: #111827;
+        --text: #111827;
+        --muted: #4b5563;
+        --line: #dfe5ee;
+        --subtle-line: #edf1f6;
+        --panel: #ffffff;
+        --page: #f6f8fb;
+        --sidebar: #fbfcfe;
+        --field-bg: #ffffff;
+        --field-border: #ccd6e1;
+        --control-bg: #ffffff;
+        --control-bg-hover: #f4f8ff;
+        --control-text: #0f5fbd;
+        --primary-button-text: #ffffff;
+        --primary-gradient: linear-gradient(180deg, #1a83f5 0%, #0f72df 100%);
+        --primary-gradient-hover: linear-gradient(180deg, #2490ff 0%, #1069ce 100%);
+        --primary-shadow: 0 7px 16px rgba(22, 119, 232, 0.22);
+        --card-shadow: 0 3px 16px rgba(17, 24, 39, 0.04);
+        --scene-bg: #ffffff;
+        --canvas-bg: #ffffff;
+        --canvas-grid: #d8dee8;
+        --canvas-axis: #8b96a8;
+        --label-zero: #EB5757;
+        --label-one: #27AE60;
+        --sample-size: 256px;
+      }
+
+      body[data-theme="dark"] {
+        color-scheme: dark;
+        --bg1: #191919;
+        --bg2: #222222;
+        --primary: #5D71FC;
+        --blue: #5D71FC;
+        --blue-dark: #5D71FC;
+        --page: var(--bg1);
+        --panel: var(--bg2);
+        --sidebar: var(--bg2);
+        --scene-bg: var(--bg1);
+        --canvas-bg: #ffffff;
+        --ink: #f8f8f8;
+        --text: #f8f8f8;
+        --muted: rgba(248, 248, 248, 0.62);
+        --line: transparent;
+        --subtle-line: transparent;
+        --field-border: transparent;
+        --field-bg: var(--bg1);
+        --control-bg: var(--bg1);
+        --control-bg-hover: var(--bg2);
+        --control-text: var(--primary);
+        --primary-button-text: #f8f8f8;
+        --primary-gradient: linear-gradient(180deg, var(--primary) 0%, var(--primary) 100%);
+        --primary-gradient-hover: linear-gradient(180deg, var(--primary) 0%, var(--primary) 100%);
+        --primary-shadow: none;
+        --card-shadow: none;
+        --canvas-grid: rgba(248, 248, 248, 0.08);
+        --canvas-axis: rgba(248, 248, 248, 0.42);
+        --label-zero: #EB5757;
+        --label-one: #27AE60;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+        color: var(--text);
+        background: var(--page);
+      }
+
+      body,
+      button,
+      input {
+        font: inherit;
+      }
+
+      button,
+      input[type="range"] {
+        cursor: pointer;
+      }
+
+      .app-shell {
+        display: grid;
+        grid-template-columns: clamp(286px, 19vw, 380px) minmax(0, 1fr);
+        width: 100vw;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        min-width: 0;
+        height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        background: var(--sidebar);
+        border-right: 1px solid var(--line);
+      }
+
+      .sidebar-inner {
+        padding: 18px 18px 22px;
+      }
+
+      .brand {
+        padding: 0 0 14px;
+      }
+
+      .brand h1 {
+        margin: 0 0 4px;
+        font-size: 24px;
+        line-height: 1.15;
+        font-weight: 800;
+      }
+
+      .brand p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.25;
+      }
+
+      .control-section,
+      .info-card {
+        padding: 15px 0 12px;
+        border-top: 1px solid var(--line);
+      }
+
+      .control-section h2,
+      .info-card h2,
+      .data-card h2 {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.1;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .slider-field,
+      .field-label {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px 10px;
+        width: 100%;
+        margin-top: 15px;
+        font-size: 13px;
+      }
+
+      .slider-field output {
+        min-width: 54px;
+        color: var(--text);
+        text-align: right;
+      }
+
+      .slider-field input {
+        grid-column: 1 / -1;
+        width: 100%;
+        margin: 0;
+      }
+
+      input[type="range"] {
+        --range-progress: 50%;
+        --slider-fill: var(--blue);
+        --slider-track: #191919;
+        appearance: none;
+        height: 22px;
+        background: transparent;
+        accent-color: var(--slider-fill);
+      }
+
+      input[type="range"]::-webkit-slider-runnable-track {
+        height: 6px;
+        border-radius: 8px;
+        background: linear-gradient(90deg, var(--slider-fill) 0%, var(--slider-fill) var(--range-progress), var(--slider-track) var(--range-progress), var(--slider-track) 100%);
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        margin-top: -5px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--slider-fill);
+      }
+
+      input[type="range"]::-moz-range-track {
+        height: 6px;
+        border-radius: 8px;
+        background: var(--slider-track);
+      }
+
+      input[type="range"]::-moz-range-progress {
+        height: 6px;
+        border-radius: 8px;
+        background: var(--slider-fill);
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--slider-fill);
+      }
+
+      .field-label {
+        grid-template-columns: 1fr;
+        font-weight: 700;
+      }
+
+      .field {
+        width: 100%;
+        height: 36px;
+        padding: 0 12px;
+        color: var(--text);
+        background: var(--field-bg);
+        border: 1px solid var(--field-border);
+        border-radius: 7px;
+      }
+
+      .field:focus {
+        outline: 2px solid color-mix(in srgb, var(--blue) 32%, transparent);
+        outline-offset: 2px;
+      }
+
+      .toggle-field {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 34px;
+        padding: 0 2px;
+        margin-top: 15px;
+        font-size: 13px;
+      }
+
+      .toggle-field input {
+        width: 34px;
+        height: 18px;
+        margin: 0;
+        appearance: none;
+        position: relative;
+        flex: 0 0 auto;
+        background: var(--control-bg);
+        border: 1px solid var(--field-border);
+        border-radius: 8px;
+      }
+
+      .toggle-field input::before {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 8px;
+        background: var(--muted);
+        transition: transform 120ms ease, background 120ms ease;
+      }
+
+      .toggle-field input:checked {
+        background: var(--blue);
+      }
+
+      .toggle-field input:checked::before {
+        transform: translateX(16px);
+        background: var(--primary-button-text);
+      }
+
+      .primary-button,
+      .secondary-button {
+        width: 100%;
+        height: 44px;
+        border-radius: 8px;
+        font-weight: 700;
+      }
+
+      .primary-button {
+        margin: 12px 0 10px;
+        border: 0;
+        color: var(--primary-button-text);
+        background: var(--primary-gradient);
+        font-size: 16px;
+        box-shadow: var(--primary-shadow);
+      }
+
+      .secondary-button {
+        margin: 0 0 10px;
+        border: 1px solid var(--field-border);
+        color: var(--control-text);
+        background: var(--control-bg);
+        font-size: 14px;
+      }
+
+      .primary-button:hover {
+        background: var(--primary-gradient-hover);
+      }
+
+      .secondary-button:hover {
+        background: var(--control-bg-hover);
+      }
+
+      .info-card p {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .workspace {
+        min-width: 0;
+        min-height: 100vh;
+        padding: 18px;
+        display: grid;
+        grid-template-rows: auto auto;
+        gap: 18px;
+      }
+
+      .simulation-card,
+      .data-card,
+      .label-panel {
+        overflow: hidden;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--card-shadow);
+      }
+
+      .simulation-card {
+        min-height: 0;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+      }
+
+      .sim-header {
+        min-height: 68px;
+        padding: 14px 16px 12px;
+        border-bottom: 1px solid var(--subtle-line);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        float: right;
+      }
+
+      .header-button {
+        min-width: 42px;
+        height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--field-border);
+        border-radius: 8px;
+        color: var(--control-text);
+        background: var(--control-bg);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .header-button:hover {
+        background: var(--control-bg-hover);
+      }
+
+      .sim-header h2 {
+        margin: 0 0 4px;
+        font-size: 20px;
+        line-height: 1.15;
+      }
+
+      .sim-header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .scene-frame {
+        min-height: 0;
+        padding: 16px;
+        background: var(--scene-bg);
+      }
+
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .label-panel {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+      }
+
+      .label-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: start;
+        padding: 14px 16px 12px;
+        border-bottom: 1px solid var(--subtle-line);
+      }
+
+      .label-header h3 {
+        margin: 0 0 4px;
+        font-size: 18px;
+        line-height: 1.15;
+      }
+
+      .label-header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .label-badge {
+        display: inline-flex;
+        align-items: center;
+        height: 28px;
+        padding: 0 10px;
+        color: #ffffff;
+        background: var(--label-color);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .sample-grid {
+        display: grid;
+        grid-template-columns: minmax(220px, 320px);
+        justify-content: center;
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .sample-tile {
+        min-width: 0;
+        padding: 10px;
+        background: var(--field-bg);
+        border: 1px solid var(--subtle-line);
+        border-radius: 8px;
+      }
+
+      .sample-canvas {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1;
+        background: #ffffff;
+        border: 1px solid #dfe5ee;
+        border-radius: 7px;
+      }
+
+      .sample-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .bottom-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+        gap: 18px;
+      }
+
+      .data-card {
+        padding: 14px 16px;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .metric {
+        min-width: 0;
+        padding: 11px 12px;
+        border-radius: 8px;
+        background: var(--field-bg);
+        border: 1px solid var(--subtle-line);
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 18px;
+        line-height: 1.15;
+      }
+
+      .legend-list,
+      .code-list {
+        display: grid;
+        gap: 9px;
+        margin: 14px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .legend-list li,
+      .code-list li {
+        display: grid;
+        grid-template-columns: minmax(92px, 0.34fr) minmax(0, 1fr);
+        gap: 12px;
+        padding: 9px 0;
+        color: var(--muted);
+        border-bottom: 1px solid var(--subtle-line);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .legend-list li:last-child,
+      .code-list li:last-child {
+        border-bottom: 0;
+      }
+
+      .legend-list strong,
+      .code-list strong {
+        color: var(--text);
+        font-weight: 800;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 0 9px;
+        color: var(--control-text);
+        background: var(--control-bg-hover);
+        border: 1px solid var(--subtle-line);
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      code {
+        padding: 1px 5px;
+        color: var(--text);
+        background: var(--field-bg);
+        border: 1px solid var(--subtle-line);
+        border-radius: 5px;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.95em;
+      }
+
+      body[data-theme="dark"] .sidebar,
+      body[data-theme="dark"] .simulation-card,
+      body[data-theme="dark"] .data-card,
+      body[data-theme="dark"] .label-panel,
+      body[data-theme="dark"] .header-button {
+        border: 0;
+        background: var(--panel);
+        box-shadow: none;
+      }
+
+      body[data-theme="dark"] .secondary-button {
+        border: 0;
+        background: var(--control-bg);
+        box-shadow: none;
+      }
+
+      body[data-theme="dark"] .control-section,
+      body[data-theme="dark"] .info-card,
+      body[data-theme="dark"] .sim-header,
+      body[data-theme="dark"] .label-header,
+      body[data-theme="dark"] .metric,
+      body[data-theme="dark"] .sample-tile {
+        border-color: transparent;
+      }
+
+      body[data-theme="dark"] .header-button:hover,
+      body[data-theme="dark"] .secondary-button:hover {
+        color: var(--text);
+        background: var(--control-bg-hover);
+      }
+
+      @media (max-width: 1100px) {
+        .preview-grid,
+        .bottom-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .app-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .workspace {
+          min-height: auto;
+        }
+      }
+    </style>
+  </head>
+  <body data-theme="light">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Dataset controls">
+        <div class="sidebar-inner">
+          <header class="brand">
+            <h1>Triangle Dataset Viewer</h1>
+            <p>Compare one example per label</p>
+          </header>
+
+          <section class="control-section">
+            <h2>Dataset</h2>
+            <label class="field-label" for="nSamplesInput">
+              <span>N_SAMPLES</span>
+              <input class="field" id="nSamplesInput" type="number" value="20000" min="2" step="100">
+            </label>
+            <label class="slider-field" for="rectanglePct">
+              <span>RECTANGLE_PCT</span>
+              <output id="rectanglePctValue">30%</output>
+              <input id="rectanglePct" type="range" min="0" max="100" step="1" value="30">
+            </label>
+            <label class="field-label" for="seedInput">
+              <span>SEED</span>
+              <input class="field" id="seedInput" type="number" value="42" min="1" step="1">
+            </label>
+            <label class="field-label" for="imageSizeInput">
+              <span>IMAGE_SIZE</span>
+              <input class="field" id="imageSizeInput" type="number" value="256" min="64" max="512" step="32">
+            </label>
+            <label class="field-label" for="outputDirInput">
+              <span>OUTPUT_DIR</span>
+              <input class="field" id="outputDirInput" type="text" value="triangle_images">
+            </label>
+          </section>
+
+          <section class="control-section">
+            <h2>Generation toggles</h2>
+            <label class="toggle-field" for="randomSizeToggle">
+              <span>Random size</span>
+              <input id="randomSizeToggle" type="checkbox" checked>
+            </label>
+            <label class="toggle-field" for="randomPositionToggle">
+              <span>Random position</span>
+              <input id="randomPositionToggle" type="checkbox" checked>
+            </label>
+            <label class="toggle-field" for="randomRotationToggle">
+              <span>Random rotation</span>
+              <input id="randomRotationToggle" type="checkbox" checked>
+            </label>
+            <label class="toggle-field" for="randomColorToggle">
+              <span>Random color</span>
+              <input id="randomColorToggle" type="checkbox" checked>
+            </label>
+            <label class="toggle-field" for="randomLinesToggle">
+              <span>Random lines</span>
+              <input id="randomLinesToggle" type="checkbox" checked>
+            </label>
+            <label class="toggle-field" for="pixelNoiseToggle">
+              <span>Pixel noise</span>
+              <input id="pixelNoiseToggle" type="checkbox" checked>
+            </label>
+            <label class="toggle-field" for="backgroundCirclesToggle">
+              <span>Background circles</span>
+              <input id="backgroundCirclesToggle" type="checkbox" checked>
+            </label>
+          </section>
+
+          <button class="primary-button" id="regenerateButton" type="button">Regenerate examples</button>
+
+          <section class="info-card">
+            <h2>Labels</h2>
+            <p><strong>Label 0</strong>: non-right triangle generated from three valid random points.</p>
+            <p><strong>Label 1</strong>: right triangle, then randomized size, position, rotation, and color.</p>
+          </section>
+
+          <section class="info-card">
+            <h2>Source</h2>
+            <p>This page can display the real dataset after <code>gen-images.py</code> creates <code>triangle_images/manifest.json</code>. Otherwise, it draws equivalent examples in JavaScript.</p>
+          </section>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <section class="simulation-card">
+          <header class="sim-header">
+            <div class="header-actions">
+              <span class="status-pill" id="modeStatus">procedural mode</span>
+              <button id="manifestButton" class="header-button" type="button">Manifest</button>
+              <button id="themeToggle" class="header-button" type="button" aria-label="Enable dark mode" aria-pressed="false" title="Enable dark mode">☾</button>
+            </div>
+            <h2>Dataset preview</h2>
+            <p id="previewSubtitle">Examples generated from the same rules as gen-images.py</p>
+          </header>
+
+          <div class="scene-frame">
+            <div class="preview-grid">
+              <article class="label-panel" style="--label-color: var(--label-zero);">
+                <header class="label-header">
+                  <div>
+                    <h3>Label 0</h3>
+                    <p>Non-right triangle with visual background noise.</p>
+                  </div>
+                  <span class="label-badge">0</span>
+                </header>
+                <div class="sample-grid" id="labelZeroGrid" aria-label="Label 0 examples"></div>
+              </article>
+
+              <article class="label-panel" style="--label-color: var(--label-one);">
+                <header class="label-header">
+                  <div>
+                    <h3>Label 1</h3>
+                    <p>Right triangle after normalization and rotation.</p>
+                  </div>
+                  <span class="label-badge">1</span>
+                </header>
+                <div class="sample-grid" id="labelOneGrid" aria-label="Label 1 examples"></div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="bottom-grid">
+          <article class="data-card">
+            <h2>METRICS</h2>
+            <div class="metrics-grid">
+              <div class="metric"><span>Expected total</span><strong id="totalMetric">20000</strong></div>
+              <div class="metric"><span>Image size</span><strong id="imageSizeMetric">256px</strong></div>
+              <div class="metric"><span>Label 0</span><strong id="labelZeroMetric">14000</strong></div>
+              <div class="metric"><span>Label 1</span><strong id="labelOneMetric">6000</strong></div>
+              <div class="metric"><span>Rectangle pct</span><strong id="rectangleMetric">30%</strong></div>
+              <div class="metric"><span>Output dir</span><strong id="outputDirMetric">triangle_images</strong></div>
+            </div>
+          </article>
+
+          <article class="data-card">
+            <h2>CODE NOTES</h2>
+            <ul class="code-list">
+              <li><strong>1</strong><span><code>generate_right_triangle()</code> creates a right angle before rotation.</span></li>
+              <li><strong>0</strong><span><code>generate_non_right_triangle()</code> rejects triangles that are close to right triangles.</span></li>
+              <li><strong>Style</strong><span>The triangle outline changes color, while the background adds random lines and circles.</span></li>
+              <li><strong>Manifest</strong><span>After generation, the page reads <code>triangle_images/manifest.json</code> to show the real images.</span></li>
+            </ul>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      var IMAGE_SIZE = 256;
+      var manifest = null;
+      var mode = "procedural";
+      var controls = {
+        nSamplesInput: document.getElementById("nSamplesInput"),
+        rectanglePct: document.getElementById("rectanglePct"),
+        rectanglePctValue: document.getElementById("rectanglePctValue"),
+        seedInput: document.getElementById("seedInput"),
+        imageSizeInput: document.getElementById("imageSizeInput"),
+        outputDirInput: document.getElementById("outputDirInput"),
+        randomSizeToggle: document.getElementById("randomSizeToggle"),
+        randomPositionToggle: document.getElementById("randomPositionToggle"),
+        randomRotationToggle: document.getElementById("randomRotationToggle"),
+        randomColorToggle: document.getElementById("randomColorToggle"),
+        randomLinesToggle: document.getElementById("randomLinesToggle"),
+        pixelNoiseToggle: document.getElementById("pixelNoiseToggle"),
+        backgroundCirclesToggle: document.getElementById("backgroundCirclesToggle"),
+        regenerateButton: document.getElementById("regenerateButton"),
+        manifestButton: document.getElementById("manifestButton"),
+        themeToggle: document.getElementById("themeToggle"),
+        modeStatus: document.getElementById("modeStatus"),
+        previewSubtitle: document.getElementById("previewSubtitle"),
+        labelZeroGrid: document.getElementById("labelZeroGrid"),
+        labelOneGrid: document.getElementById("labelOneGrid"),
+        totalMetric: document.getElementById("totalMetric"),
+        imageSizeMetric: document.getElementById("imageSizeMetric"),
+        labelZeroMetric: document.getElementById("labelZeroMetric"),
+        labelOneMetric: document.getElementById("labelOneMetric"),
+        rectangleMetric: document.getElementById("rectangleMetric"),
+        outputDirMetric: document.getElementById("outputDirMetric"),
+      };
+
+      function readConfig() {
+        return {
+          nSamples: Math.max(2, Number(controls.nSamplesInput.value || 20000)),
+          rectanglePct: Math.max(0, Math.min(100, Number(controls.rectanglePct.value || 30))),
+          seed: Number(controls.seedInput.value || 42),
+          imageSize: Math.max(64, Math.min(512, Number(controls.imageSizeInput.value || 256))),
+          outputDir: controls.outputDirInput.value || "triangle_images",
+          randomSize: controls.randomSizeToggle.checked,
+          randomPosition: controls.randomPositionToggle.checked,
+          randomRotation: controls.randomRotationToggle.checked,
+          randomColor: controls.randomColorToggle.checked,
+          addRandomLines: controls.randomLinesToggle.checked,
+          addPixelNoise: controls.pixelNoiseToggle.checked,
+          addBackgroundCircles: controls.backgroundCirclesToggle.checked,
+        };
+      }
+
+      function mulberry32(seed) {
+        return function() {
+          var t = seed += 0x6D2B79F5;
+          t = Math.imul(t ^ t >>> 15, t | 1);
+          t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+          return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+      }
+
+      function randomBetween(rng, min, max) {
+        return min + rng() * (max - min);
+      }
+
+      function randomInt(rng, min, maxExclusive) {
+        return Math.floor(randomBetween(rng, min, maxExclusive));
+      }
+
+      function distance(a, b) {
+        var dx = a.x - b.x;
+        var dy = a.y - b.y;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      function generateRightTriangle(rng) {
+        var width = randomBetween(rng, 40, 140);
+        var height = randomBetween(rng, 40, 140);
+        return [{ x: 0, y: 0 }, { x: width, y: 0 }, { x: 0, y: height }];
+      }
+
+      function generateNonRightTriangle(rng) {
+        for (var attempt = 0; attempt < 200; attempt++) {
+          var points = [
+            { x: randomBetween(rng, 0, 140), y: randomBetween(rng, 0, 140) },
+            { x: randomBetween(rng, 0, 140), y: randomBetween(rng, 0, 140) },
+            { x: randomBetween(rng, 0, 140), y: randomBetween(rng, 0, 140) },
+          ];
+          var sides = [
+            distance(points[0], points[1]),
+            distance(points[1], points[2]),
+            distance(points[2], points[0]),
+          ].sort(function(a, b) { return a - b; });
+          var valid = sides[0] + sides[1] > sides[2];
+          var rightish = Math.abs(sides[0] * sides[0] + sides[1] * sides[1] - sides[2] * sides[2]) <= 1e-2;
+          if (valid && !rightish) return points;
+        }
+        return [{ x: 12, y: 18 }, { x: 132, y: 28 }, { x: 70, y: 126 }];
+      }
+
+      function rotatePoints(points, angleDeg) {
+        var angleRad = angleDeg * Math.PI / 180;
+        var center = points.reduce(function(sum, point) {
+          sum.x += point.x;
+          sum.y += point.y;
+          return sum;
+        }, { x: 0, y: 0 });
+        center.x /= points.length;
+        center.y /= points.length;
+
+        var cos = Math.cos(angleRad);
+        var sin = Math.sin(angleRad);
+        return points.map(function(point) {
+          var x = point.x - center.x;
+          var y = point.y - center.y;
+          return {
+            x: x * cos - y * sin + center.x,
+            y: x * sin + y * cos + center.y,
+          };
+        });
+      }
+
+      function normalizeTriangle(rng, points) {
+        var config = readConfig();
+        var minX = Math.min.apply(null, points.map(function(point) { return point.x; }));
+        var minY = Math.min.apply(null, points.map(function(point) { return point.y; }));
+        points = points.map(function(point) {
+          return { x: point.x - minX, y: point.y - minY };
+        });
+
+        var maxValue = Math.max.apply(null, points.flatMap(function(point) { return [point.x, point.y]; }));
+        var targetSize = config.randomSize ? randomBetween(rng, 80, 200) : 160;
+        points = points.map(function(point) {
+          return { x: point.x / maxValue * targetSize, y: point.y / maxValue * targetSize };
+        });
+
+        if (config.randomRotation) {
+          points = rotatePoints(points, randomBetween(rng, 0, 360));
+          minX = Math.min.apply(null, points.map(function(point) { return point.x; }));
+          minY = Math.min.apply(null, points.map(function(point) { return point.y; }));
+          points = points.map(function(point) {
+            return { x: point.x - minX, y: point.y - minY };
+          });
+        }
+
+        var maxX = Math.max.apply(null, points.map(function(point) { return point.x; }));
+        var maxY = Math.max.apply(null, points.map(function(point) { return point.y; }));
+        var fitScale = Math.min(1, (IMAGE_SIZE - 20) / Math.max(maxX, maxY, 1));
+        if (fitScale < 1) {
+          points = points.map(function(point) {
+            return { x: point.x * fitScale, y: point.y * fitScale };
+          });
+          maxX *= fitScale;
+          maxY *= fitScale;
+        }
+
+        var offsetX = config.randomPosition ? randomBetween(rng, 10, Math.max(10, IMAGE_SIZE - maxX - 10)) : (IMAGE_SIZE - maxX) / 2;
+        var offsetY = config.randomPosition ? randomBetween(rng, 10, Math.max(10, IMAGE_SIZE - maxY - 10)) : (IMAGE_SIZE - maxY) / 2;
+        return points.map(function(point) {
+          return { x: point.x + offsetX, y: point.y + offsetY };
+        });
+      }
+
+      function randomColor(rng) {
+        if (!readConfig().randomColor) return "rgb(0, 0, 0)";
+        return "rgb(" + randomInt(rng, 20, 245) + ", " + randomInt(rng, 20, 245) + ", " + randomInt(rng, 20, 245) + ")";
+      }
+
+      function drawBackground(ctx, rng) {
+        var config = readConfig();
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, IMAGE_SIZE, IMAGE_SIZE);
+
+        if (config.addBackgroundCircles) {
+          var circles = randomInt(rng, 3, 12);
+          for (var i = 0; i < circles; i++) {
+            ctx.beginPath();
+            ctx.arc(randomBetween(rng, 0, IMAGE_SIZE), randomBetween(rng, 0, IMAGE_SIZE), randomBetween(rng, 5, 35), 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(" + randomInt(rng, 0, 255) + ", " + randomInt(rng, 0, 255) + ", " + randomInt(rng, 0, 255) + ", " + randomBetween(rng, 0.15, 0.45).toFixed(2) + ")";
+            ctx.fill();
+          }
+        }
+
+        if (config.addRandomLines) {
+          var lines = randomInt(rng, 2, 10);
+          for (var j = 0; j < lines; j++) {
+            ctx.beginPath();
+            ctx.moveTo(randomBetween(rng, 0, IMAGE_SIZE), randomBetween(rng, 0, IMAGE_SIZE));
+            ctx.lineTo(randomBetween(rng, 0, IMAGE_SIZE), randomBetween(rng, 0, IMAGE_SIZE));
+            ctx.strokeStyle = "rgba(" + randomInt(rng, 0, 255) + ", " + randomInt(rng, 0, 255) + ", " + randomInt(rng, 0, 255) + ", " + randomBetween(rng, 0.15, 0.5).toFixed(2) + ")";
+            ctx.lineWidth = randomBetween(rng, 0.5, 2);
+            ctx.stroke();
+          }
+        }
+
+        if (config.addPixelNoise) {
+          var noisePixels = IMAGE_SIZE * 8;
+          for (var k = 0; k < noisePixels; k++) {
+            ctx.fillStyle = "rgba(" + randomInt(rng, 0, 255) + ", " + randomInt(rng, 0, 255) + ", " + randomInt(rng, 0, 255) + ", 0.08)";
+            ctx.fillRect(randomBetween(rng, 0, IMAGE_SIZE), randomBetween(rng, 0, IMAGE_SIZE), 1, 1);
+          }
+        }
+      }
+
+      function drawTriangleExample(canvas, label, index) {
+        var config = readConfig();
+        IMAGE_SIZE = config.imageSize;
+        var seed = config.seed + label * 7919 + index * 997;
+        var rng = mulberry32(seed);
+        var ctx = canvas.getContext("2d");
+        canvas.width = IMAGE_SIZE;
+        canvas.height = IMAGE_SIZE;
+        drawBackground(ctx, rng);
+
+        var points = label === 1 ? generateRightTriangle(rng) : generateNonRightTriangle(rng);
+        points = normalizeTriangle(rng, points);
+
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        ctx.lineTo(points[1].x, points[1].y);
+        ctx.lineTo(points[2].x, points[2].y);
+        ctx.closePath();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = randomColor(rng);
+        ctx.stroke();
+      }
+
+      function drawImageRecord(canvas, record) {
+        IMAGE_SIZE = Number((manifest && manifest.image_size) || readConfig().imageSize || 256);
+        canvas.width = IMAGE_SIZE;
+        canvas.height = IMAGE_SIZE;
+        var ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, IMAGE_SIZE, IMAGE_SIZE);
+        var image = new Image();
+        image.onload = function() {
+          ctx.clearRect(0, 0, IMAGE_SIZE, IMAGE_SIZE);
+          ctx.drawImage(image, 0, 0, IMAGE_SIZE, IMAGE_SIZE);
+        };
+        image.onerror = function() {
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, IMAGE_SIZE, IMAGE_SIZE);
+          ctx.fillStyle = "#4b5563";
+          ctx.font = "13px Inter, system-ui, sans-serif";
+          ctx.fillText("image not found", 24, 128);
+        };
+        image.src = record.path;
+      }
+
+      function pickManifestRecords(label, count) {
+        if (!manifest || !manifest.samples) return [];
+        var rng = mulberry32(readConfig().seed + label * 313);
+        var samples = manifest.samples.filter(function(item) {
+          return Number(item.label) === label;
+        }).slice();
+        for (var i = samples.length - 1; i > 0; i--) {
+          var j = Math.floor(rng() * (i + 1));
+          var swap = samples[i];
+          samples[i] = samples[j];
+          samples[j] = swap;
+        }
+        return samples.slice(0, count);
+      }
+
+      function renderGrid(label, grid) {
+        var count = 1;
+        grid.innerHTML = "";
+        var records = mode === "manifest" ? pickManifestRecords(label, count) : [];
+        for (var i = 0; i < count; i++) {
+          var tile = document.createElement("div");
+          tile.className = "sample-tile";
+          var canvas = document.createElement("canvas");
+          canvas.className = "sample-canvas";
+          canvas.setAttribute("aria-label", "Sample label " + label);
+          var meta = document.createElement("div");
+          meta.className = "sample-meta";
+          var left = document.createElement("span");
+          var right = document.createElement("span");
+
+          if (records[i]) {
+            drawImageRecord(canvas, records[i]);
+            left.textContent = "label " + label;
+            right.textContent = "#" + String(records[i].index).padStart(5, "0");
+          } else {
+            drawTriangleExample(canvas, label, i);
+            left.textContent = "label " + label;
+            right.textContent = "preview " + (i + 1);
+          }
+
+          meta.append(left, right);
+          tile.append(canvas, meta);
+          grid.appendChild(tile);
+        }
+      }
+
+      function updateRangeFill(input) {
+        var min = Number(input.min || 0);
+        var max = Number(input.max || 100);
+        var value = Number(input.value || 0);
+        var progress = ((value - min) / Math.max(max - min, 1)) * 100;
+        input.style.setProperty("--range-progress", progress + "%");
+      }
+
+      function updateMetrics() {
+        var config = readConfig();
+        controls.rectanglePctValue.textContent = config.rectanglePct + "%";
+        updateRangeFill(controls.rectanglePct);
+        if (mode === "manifest" && manifest && manifest.counts) {
+          controls.totalMetric.textContent = String(manifest.n_samples || manifest.samples.length);
+          controls.imageSizeMetric.textContent = String(manifest.image_size || config.imageSize) + "px";
+          controls.labelZeroMetric.textContent = String(manifest.counts["0"]);
+          controls.labelOneMetric.textContent = String(manifest.counts["1"]);
+          controls.rectangleMetric.textContent = Math.round(Number(manifest.rectangle_pct || config.rectanglePct / 100) * 100) + "%";
+          controls.outputDirMetric.textContent = manifest.output_dir || config.outputDir;
+        } else {
+          var labelOneCount = Math.floor(config.nSamples * (config.rectanglePct / 100));
+          controls.totalMetric.textContent = String(config.nSamples);
+          controls.imageSizeMetric.textContent = config.imageSize + "px";
+          controls.labelZeroMetric.textContent = String(config.nSamples - labelOneCount);
+          controls.labelOneMetric.textContent = String(labelOneCount);
+          controls.rectangleMetric.textContent = config.rectanglePct + "%";
+          controls.outputDirMetric.textContent = config.outputDir;
+        }
+      }
+
+      function render() {
+        updateMetrics();
+        controls.modeStatus.textContent = mode === "manifest" ? "manifest mode" : "procedural mode";
+        controls.previewSubtitle.textContent = mode === "manifest"
+          ? "Images loaded from " + readConfig().outputDir + "/manifest.json"
+          : "Examples generated from the same rules as gen-images.py";
+        renderGrid(0, controls.labelZeroGrid);
+        renderGrid(1, controls.labelOneGrid);
+      }
+
+      async function loadManifest() {
+        controls.modeStatus.textContent = "loading...";
+        try {
+          var response = await fetch(readConfig().outputDir + "/manifest.json", { cache: "no-store" });
+          if (!response.ok) throw new Error("manifest absent");
+          manifest = await response.json();
+          controls.nSamplesInput.value = String(manifest.n_samples || controls.nSamplesInput.value);
+          controls.rectanglePct.value = String(Math.round(Number(manifest.rectangle_pct || 0.3) * 100));
+          controls.seedInput.value = String(manifest.seed || controls.seedInput.value);
+          controls.imageSizeInput.value = String(manifest.image_size || controls.imageSizeInput.value);
+          controls.outputDirInput.value = manifest.output_dir || controls.outputDirInput.value;
+          if (manifest.parameters) {
+            controls.randomSizeToggle.checked = Boolean(manifest.parameters.random_size);
+            controls.randomPositionToggle.checked = Boolean(manifest.parameters.random_position);
+            controls.randomRotationToggle.checked = Boolean(manifest.parameters.random_rotation);
+            controls.randomColorToggle.checked = Boolean(manifest.parameters.random_color);
+            controls.randomLinesToggle.checked = Boolean(manifest.parameters.add_random_lines);
+            controls.pixelNoiseToggle.checked = Boolean(manifest.parameters.add_pixel_noise);
+            controls.backgroundCirclesToggle.checked = Boolean(manifest.parameters.add_background_circles);
+          }
+          mode = "manifest";
+        } catch (error) {
+          manifest = null;
+          mode = "procedural";
+          controls.previewSubtitle.textContent = "Manifest not found. Run python3 gen-images.py, then reload.";
+        }
+        render();
+      }
+
+      function applyTheme(theme) {
+        document.body.dataset.theme = theme === "dark" ? "dark" : "light";
+        var isDark = document.body.dataset.theme === "dark";
+        controls.themeToggle.textContent = isDark ? "☀" : "☾";
+        controls.themeToggle.title = isDark ? "Enable light mode" : "Enable dark mode";
+        controls.themeToggle.setAttribute("aria-label", controls.themeToggle.title);
+        controls.themeToggle.setAttribute("aria-pressed", String(isDark));
+        localStorage.setItem("triangle-dataset-viewer-theme", document.body.dataset.theme);
+      }
+
+      [
+        controls.nSamplesInput,
+        controls.rectanglePct,
+        controls.seedInput,
+        controls.imageSizeInput,
+        controls.outputDirInput,
+        controls.randomSizeToggle,
+        controls.randomPositionToggle,
+        controls.randomRotationToggle,
+        controls.randomColorToggle,
+        controls.randomLinesToggle,
+        controls.pixelNoiseToggle,
+        controls.backgroundCirclesToggle,
+      ].forEach(function(control) {
+        control.addEventListener("input", function() {
+          if (control !== controls.seedInput && control !== controls.outputDirInput) mode = "procedural";
+          render();
+        });
+        control.addEventListener("change", function() {
+          if (control !== controls.seedInput && control !== controls.outputDirInput) mode = "procedural";
+          render();
+        });
+      });
+      controls.regenerateButton.addEventListener("click", function() {
+        controls.seedInput.value = String(Number(controls.seedInput.value || 42) + 1);
+        mode = manifest ? "manifest" : "procedural";
+        render();
+      });
+      controls.manifestButton.addEventListener("click", loadManifest);
+      controls.themeToggle.addEventListener("click", function() {
+        applyTheme(document.body.dataset.theme === "dark" ? "light" : "dark");
+      });
+
+      applyTheme(localStorage.getItem("triangle-dataset-viewer-theme") || "light");
+      render();
+      loadManifest();
+    </script>
+  </body>
+</html>
