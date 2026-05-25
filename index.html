@@ -625,7 +625,7 @@
       }
     </style>
   </head>
-  <body data-theme="light">
+  <body data-theme="dark">
     <div class="app-shell">
       <aside class="sidebar" aria-label="Dataset controls">
         <div class="sidebar-inner">
@@ -712,7 +712,7 @@
             <div class="header-actions">
               <span class="status-pill" id="modeStatus">procedural mode</span>
               <button id="manifestButton" class="header-button" type="button">Manifest</button>
-              <button id="themeToggle" class="header-button" type="button" aria-label="Enable dark mode" aria-pressed="false" title="Enable dark mode">☾</button>
+              <button id="themeToggle" class="header-button" type="button" aria-label="Enable light mode" aria-pressed="true" title="Enable light mode">☀</button>
             </div>
             <h2>Dataset preview</h2>
             <p id="previewSubtitle">Examples generated from the same rules as gen-images.py</p>
@@ -1176,7 +1176,7 @@
         applyTheme(document.body.dataset.theme === "dark" ? "light" : "dark");
       });
 
-      applyTheme(localStorage.getItem("triangle-dataset-viewer-theme") || "light");
+      applyTheme(localStorage.getItem("triangle-dataset-viewer-theme") || "dark");
       render();
       loadManifest();
     </script>
